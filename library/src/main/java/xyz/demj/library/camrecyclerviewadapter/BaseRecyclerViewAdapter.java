@@ -1,0 +1,643 @@
+package xyz.demj.library.camrecyclerviewadapter;
+
+import android.support.v7.widget.RecyclerView;
+import android.view.View;
+import android.view.ViewGroup;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Created by demj on 2016/10/15.
+ */
+
+public abstract class BaseRecyclerViewAdapter<E> extends RecyclerView.Adapter<BaseRecyclerViewHolder<E>> implements IBaseAdapter<E> {
+
+    protected final List<E> mElements;
+    protected final BaseRecyclerViewHolder.ViewHolderFactory<E> mViewHolderFactory;
+    OnItemClickListener mOnItemClickListener;
+    OnItemLongClickListener mOnItemLongClickListener;
+    OnHandleClickListener mOnHandleClickListener;
+    boolean isInCAM = false;
+    private OnOperateCallback<E> mOnOperateCallback = new OnOperateCallbackImpl<>();
+
+    public BaseRecyclerViewAdapter(BaseRecyclerViewHolder.ViewHolderFactory<E> pFactory) {
+        if (pFactory == null)
+            throw new IllegalStateException("ViewHolderFactory must not null.");
+        mElements = createNewList();
+        mViewHolderFactory = pFactory;
+    }
+
+    protected List<E> createNewList() {
+        return new LinkedList<>();
+    }
+
+    protected void setOnOperateCallback(OnOperateCallback<E> pOnOperateCallback) {
+        if (pOnOperateCallback == null)
+            mOnOperateCallback = new OnOperateCallbackImpl<>();
+        else mOnOperateCallback = pOnOperateCallback;
+    }
+
+    public void setOnItemClickListener(OnItemClickListener pOnItemClickListener) {
+        mOnItemClickListener = pOnItemClickListener;
+    }
+
+    public void setOnItemLongClickListener(OnItemLongClickListener pOnItemLongClickListener) {
+        mOnItemLongClickListener = pOnItemLongClickListener;
+    }
+
+    public void setOnHandleClickListener(OnHandleClickListener pOnHandleClickListener) {
+        mOnHandleClickListener = pOnHandleClickListener;
+    }
+
+    @Override
+    public final BaseRecyclerViewHolder<E> onCreateViewHolder(ViewGroup parent, int viewType) {
+        BaseRecyclerViewHolder<E> viewHolder = mViewHolderFactory.createViewHolder(parent, viewType);
+        viewHolder.mAdapter = this;
+        return viewHolder;
+    }
+
+    @Override
+    public final void onBindViewHolder(BaseRecyclerViewHolder<E> holder, int position) {
+        holder.bindViewHolder(get(position), this, position);
+    }
+
+    @Override
+    public int getItemCount() {
+        return mElements.size();
+    }
+
+    @Override
+    public void add(E element) {
+        add(element, true);
+    }
+
+    @Override
+    public void add(E element, int position) {
+        add(element, position, true);
+    }
+
+    @Override
+    public void add(E element, E beforeWhich) {
+        add(element, beforeWhich, true);
+    }
+
+    @Override
+    public void add(E element, boolean notify) {
+        add(element, mElements.size(), notify);
+    }
+
+    @Override
+    public void add(E element, int position, boolean notify) {
+        if (element == null)
+            return;
+        if (position <= -1 || position > mElements.size())
+            position = mElements.size();
+//        if (position > mElements.size())
+//            position = mElements.size();
+        doBeforeAdd(position, element, notify);
+        mElements.add(position, element);
+        doAfterAdd(position, element, notify);
+        if (notify)
+            notifyItemInserted(position);
+    }
+
+    @Override
+    public void add(E element, E beforeWhichOne, boolean notify) {
+        if (beforeWhichOne == null)
+            return;
+        int index = mElements.indexOf(beforeWhichOne);
+        if (index != -1)
+            add(element, index, notify);
+    }
+
+    @Override
+    public void add(E element, Selector<? super E> pSelector) {
+        add(element, pSelector, true);
+    }
+
+    @Override
+    public void add(E element, Selector<? super E> pSelector, boolean notify) {
+        if (pSelector == null)
+            return;
+        for (E e : mElements) {
+            if (pSelector.isSelected(e)) {
+                int index = mElements.indexOf(e);
+                add(element, index, notify);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void addAll(Collection<? extends E> elements, int position, boolean notify) {
+        List<E> list = Collections.unmodifiableList(filterNoneNull(elements));
+        int count = list.size();
+        if (position <= -1 || position > mElements.size())
+            position = mElements.size();
+        if (count != 0) {
+            doBeforeAddAll(position, list);
+            mElements.addAll(position, list);
+            doAfterAddAll(position, list, notify);
+            if (notify)
+                notifyItemRangeInserted(position, count);
+        }
+    }
+
+    @Override
+    public void addAll(Collection<? extends E> elements, int position) {
+        addAll(elements, position, true);
+    }
+
+    private static <E> List<E> filterNoneNull(Collection<? extends E> pCollection) {
+        List<E> list = new ArrayList<>(pCollection.size());
+        for (E e : pCollection) {
+            if (e != null)
+                list.add(e);
+        }
+        return list;
+    }
+
+    private void doBeforeAddAll(int pPosition, List<E> pList) {
+        mOnOperateCallback.doBeforeAddAll(pPosition, pList);
+    }
+
+    private void doAfterAddAll(int pPosition, List<E> pList, boolean notify) {
+        mOnOperateCallback.doAfterAddAll(pPosition, pList, notify);
+    }
+
+    @Override
+    public void addAll(Collection<? extends E> elements, boolean notify) {
+        addAll(elements, -1, notify);
+    }
+
+    @Override
+    public void addAll(Collection<? extends E> elements) {
+        addAll(elements, -1, true);
+    }
+
+    @Override
+    public void addAll(E[] elements, int postion, boolean notify) {
+        int length = elements.length;
+        int count = 0;
+        if (postion <= -1 || postion > mElements.size())
+            postion = mElements.size();
+        for (int i = length - 1; i >= 0; i--) {
+            E e = elements[i];
+            if (e != null) {
+                doBeforeAdd(postion, e, notify);
+                mElements.add(postion, e);
+                doAfterAdd(postion, e, notify);
+                ++count;
+            }
+        }
+        if (notify && count > 0)
+            notifyItemRangeInserted(postion, count);
+    }
+
+    @Override
+    public void addAll(E[] elements, int postion) {
+        addAll(elements, postion, true);
+    }
+
+    @Override
+    public void addAll(E[] elements, boolean notify) {
+        addAll(elements, -1, notify);
+    }
+
+    @Override
+    public void addAll(E[] elements) {
+        addAll(elements, -1, true);
+    }
+
+    @Override
+    public E remove(int position, boolean notify) {
+        if (!validPos(position))
+            return null;
+        doBeforeRemove(position);
+        E removed = mElements.remove(position);
+        if (notify)
+            notifyItemRemoved(position);
+        doAfterRemove(removed, notify);
+        return removed;
+    }
+
+    @Override
+    public E remove(int position) {
+        return remove(position, true);
+    }
+
+    protected void doBeforeRemove(int pos) {
+        mOnOperateCallback.doBeforeRemove(pos);
+    }
+
+    protected void doAfterRemove(E e, boolean notify) {
+        mOnOperateCallback.doAfterRemove(e, notify);
+    }
+
+    @Override
+    public E remove(E comparator, boolean notify) {
+        if (comparator == null)
+            return null;
+        int index = mElements.indexOf(comparator);
+        return remove(index, notify);
+    }
+
+    @Override
+    public E remove(E comparator) {
+        return remove(comparator, true);
+    }
+
+    @Override
+    public E removeBy(Selector<? super E> pSelector) {
+        return removeBy(pSelector, true, false, false);
+    }
+
+    private E removeBy(Selector<? super E> pSelector, boolean notify, boolean justOne, boolean reversed) {
+        E removed = null;
+        for (E e : copyList(mElements, reversed)) {
+            if (pSelector.isSelected(e)) {
+                int index = mElements.indexOf(e);
+                if (index != -1) {
+                    doBeforeRemove(index);
+                    removed = mElements.remove(index);
+                    if (notify)
+                        notifyItemRemoved(index);
+                    doAfterRemove(removed, notify);
+                    if (justOne)
+                        break;
+                }
+            }
+        }
+        return removed;
+    }
+
+    @Override
+    public E removeBy(Selector<? super E> pSelector, boolean notify) {
+        return removeBy(pSelector, notify, false, false);
+    }
+
+    @Override
+    public E removeFirst(Selector<? super E> pSelector, boolean notify) {
+        return removeBy(pSelector, notify, true, false);
+    }
+
+    @Override
+    public E removeFirst(Selector<? super E> pSelector) {
+        return removeBy(pSelector, true, true, false);
+    }
+
+    @Override
+    public E removeLast(Selector<? super E> pSelector) {
+        return removeBy(pSelector, true, true, true);
+    }
+
+    @Override
+    public E removeLast(Selector<? super E> pSelector, boolean notify) {
+        return removeBy(pSelector, notify, true, true);
+    }
+
+    @Override
+    public void removeAll(boolean notify) {
+        int size = mElements.size();
+        doBeforeRemoveAll(notify);
+        mElements.clear();
+        doAfterRemoveAll(notify);
+        if (notify)
+            notifyItemRangeRemoved(0, size);
+    }
+
+    @Override
+    public void remove(Collection<? extends E> elements, boolean notify) {
+//        mElements.removeAll(elements);
+//        if (notify)
+//            notifyDataSetChanged();
+        for (E e : elements) {
+            int index = mElements.indexOf(e);
+            if (index != -1) {
+                doBeforeRemove(index);
+                mElements.remove(index);
+                if (notify)
+                    notifyItemRemoved(index);
+                doAfterRemove(e, notify);
+            }
+        }
+    }
+
+    @Override
+    public void remove(Collection<? extends E> elements) {
+        remove(elements, true);
+    }
+
+    @Override
+    public void remove(E[] elements) {
+        remove(Arrays.asList(elements), true);
+    }
+
+    @Override
+    public void remove(E[] elements, boolean notify) {
+        remove(Arrays.asList(elements), notify);
+    }
+
+    @Override
+    public void removeByPositions(Collection<Integer> positions, boolean notify) {
+        List<E> list = new ArrayList<>(positions.size());
+        for (int pos : positions) {
+            E e = mElements.get(pos);
+            if (e != null)
+                list.add(e);
+        }
+        remove(list, notify);
+    }
+
+    @Override
+    public void removeByPositions(Collection<Integer> positions) {
+        removeByPositions(positions, true);
+    }
+
+    @Override
+    public void removeByPositions(int[] positions) {
+        removeByPositions(positions, true);
+    }
+
+    @Override
+    public void removeByPositions(int[] positions, boolean notify) {
+        List<Integer> posss = new ArrayList<Integer>(positions.length);
+        for (int integer : positions) {
+            posss.add(integer);
+        }
+        removeByPositions(posss, notify);
+    }
+
+    @Override
+    public void removeAll() {
+        removeAll(true);
+    }
+
+    @Override
+    public E set(E pNewOne, int position, boolean notify) {
+
+        if (pNewOne == null)
+            return null;
+        if (!validPos(position))
+            return null;
+        doBeforeSet(position, pNewOne, notify);
+        E old = mElements.set(position, pNewOne);
+        doAfterSet(old, pNewOne, notify);
+        if (notify)
+            notifyItemChanged(position);
+        return old;
+    }
+
+    @Override
+    public E set(E pNewOne, int position) {
+        return set(pNewOne, position, true);
+    }
+
+    protected boolean validPos(int pos) {
+        return pos >= 0 && pos < mElements.size();
+    }
+
+    protected void doBeforeSet(int position, E newOne, boolean notify) {
+        mOnOperateCallback.doBeforeSet(position, newOne, notify);
+    }
+
+    protected void doAfterSet(E oldOne, E newOne, boolean notify) {
+        mOnOperateCallback.doAfterSet(oldOne, newOne, notify);
+    }
+
+    @Override
+    public E set(E pOldOne, E pNewOne, boolean notify) {
+        if (pOldOne == null || pNewOne == null)
+            return null;
+        int index = mElements.indexOf(pOldOne);
+        return set(pNewOne, index, notify);
+    }
+
+    @Override
+    public E set(E pOldOne, E pNewOne) {
+        return set(pOldOne, pNewOne, true);
+    }
+
+    @Override
+    public E set(E pNewOne, Selector<? super E> pSelector) {
+        return set(pNewOne, pSelector, true);
+    }
+
+    private E set(E pNewOne, Selector<? super E> pSelector, boolean notify, boolean justOne, boolean isReversed) {
+        if (pNewOne == null)
+            return null;
+        E old = null;
+
+        for (E e : copyList(mElements, isReversed)) {
+            if (pSelector.isSelected(e)) {
+                int index = mElements.indexOf(e);
+                old = set(pNewOne, index, notify);
+                if (notify)
+                    notifyItemChanged(index);
+                if (justOne)
+                    break;
+            }
+        }
+        return old;
+    }
+
+    private static <E> List<E> copyList(List<E> list, boolean isReversed) {
+        List<E> ls = new ArrayList<>(list.size());
+        ls.addAll(list);
+        if (isReversed)
+            Collections.reverse(ls);
+        return ls;
+    }
+
+    @Override
+    public E set(E pNewOne, Selector<? super E> pSelector, boolean notify) {
+        return set(pNewOne, pSelector, notify, false, false);
+    }
+
+    @Override
+    public E setFirst(E pNewOne, Selector<? super E> pSelector, boolean notify) {
+        return set(pNewOne, pSelector, notify, true, false);
+    }
+
+    @Override
+    public E setFirst(E pNewOne, Selector<? super E> pSelector) {
+        return set(pNewOne, pSelector, true, true, false);
+    }
+
+    @Override
+    public E setLast(E pNewOne, Selector<? super E> pSelector, boolean notify) {
+        return set(pNewOne, pSelector, notify, true, true);
+    }
+
+    @Override
+    public E setLast(E pNewOne, Selector<? super E> pSelector) {
+        return set(pNewOne, pSelector, true, true, true);
+    }
+
+    @Override
+    public E get(int position) {
+        return mElements.get(position);
+    }
+
+    @Override
+    public List<E> get(Selector<E> pSelector) {
+        List<E> ls = new LinkedList<>();
+        for (E e : mElements) {
+            if (pSelector.isSelected(e)) {
+                ls.add(e);
+            }
+        }
+        return ls;
+    }
+
+    @Override
+    public E getFirst(Selector<? super E> pSelector) {
+        return get(pSelector, false);
+    }
+
+    private E get(Selector<? super E> pSelector, boolean reversed) {
+        E target = null;
+        for (E e : copyList(mElements, reversed)) {
+            if (pSelector.isSelected(e)) {
+                int index = mElements.indexOf(e);
+                if (index != -1) {
+                    target = e;
+                    break;
+                }
+            }
+        }
+        return target;
+    }
+
+    @Override
+    public E getLast(Selector<? super E> pSelector) {
+        return get(pSelector, true);
+    }
+
+    protected void doBeforeRemoveAll(boolean notify) {
+        mOnOperateCallback.doBeforeRemoveAll(notify);
+    }
+
+    protected void doAfterRemoveAll(boolean notify) {
+        mOnOperateCallback.doAfterRemoveAll(notify);
+    }
+
+    protected void doBeforeAdd(int pos, E pNewOne, boolean notify) {
+        mOnOperateCallback.doBeforeAdd(pos, pNewOne,notify );
+    }
+
+    protected void doAfterAdd(int pPosition, E pElement, boolean notify) {
+        mOnOperateCallback.doAfterAdded(pPosition, pElement,notify );
+    }
+
+    protected boolean canHandleClick(View pView) {
+        return false;
+    }
+
+    public abstract void toggleSelection(int position);
+
+    public boolean isInContentActionMode() {
+        return isInCAM;
+    }
+
+    public abstract void attachToContentActionMode(int triggerPosition);
+
+    public abstract void detachFromContentActionMode();
+
+    public boolean isItemSelected(int position) {
+        return false;
+    }
+
+    public interface OnItemClickListener {
+        void onClick(View view, int position);
+    }
+
+    public interface OnItemLongClickListener {
+        boolean onLongClick(View pView, int position);
+    }
+
+    public interface OnHandleClickListener {
+        void handleClick(View pView, int position);
+    }
+
+    protected interface OnOperateCallback<E> {
+        void doBeforeRemove(int pos);
+
+        void doBeforeSet(int position, E newOne, boolean notify);
+
+        void doAfterSet(E oldOne, E newOne, boolean notify);
+
+        void doAfterRemove(E e, boolean notify);
+
+        void doAfterAdded(int pPosition, E newOne, boolean notify);
+
+        void doBeforeAdd(int pos, E pWill, boolean notify);
+
+        void doBeforeAddAll(int pPosition, List<E> pList);
+
+        void doAfterAddAll(int pPosition, List<E> pList, boolean notify);
+
+        void doAfterRemoveAll(boolean notify);
+
+        void doBeforeRemoveAll(boolean pNotify);
+
+    }
+
+    static class OnOperateCallbackImpl<E> implements OnOperateCallback<E> {
+        @Override
+        public void doBeforeRemove(int pos) {
+
+        }
+
+        @Override
+        public void doBeforeSet(int position, E newOne, boolean notify) {
+
+        }
+
+        @Override
+        public void doAfterSet(E oldOne, E newOne, boolean notify) {
+
+        }
+
+        @Override
+        public void doAfterRemove(E pE, boolean notify) {
+
+        }
+
+        @Override
+        public void doAfterAdded(int pPosition, E newOne, boolean notify) {
+
+        }
+
+        @Override
+        public void doBeforeAdd(int pos, E pWill, boolean notify) {
+
+        }
+
+        @Override
+        public void doBeforeAddAll(int pPosition, List<E> pList) {
+
+        }
+
+        @Override
+        public void doAfterAddAll(int pPosition, List<E> pList, boolean notify) {
+
+        }
+
+        @Override
+        public void doAfterRemoveAll(boolean notify) {
+
+        }
+
+        @Override
+        public void doBeforeRemoveAll(boolean pNotify) {
+
+        }
+    }
+
+}
