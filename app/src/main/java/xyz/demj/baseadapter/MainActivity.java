@@ -64,11 +64,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.del:
-             List<A> a=  mMyAdapter.getSelectedItems();
-                a.size();
+                mMyAdapter.remove(mMyAdapter.get(0));
                 break;
-
-
         }
         return super.onOptionsItemSelected(item);
     }

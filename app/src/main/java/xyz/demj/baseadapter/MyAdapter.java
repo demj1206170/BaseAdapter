@@ -13,9 +13,14 @@ import xyz.demj.library.camrecyclerviewadapter.ConvertAdapter;
  * Created by demj on 2016/10/15.
  */
 
-public class MyAdapter extends ConvertAdapter<A> {
+public class MyAdapter extends ConvertAdapter<A,  EA<A>> {
     public MyAdapter() {
-        super(sHolderFactory);
+        super(sHolderFactory, new TFactory<A, EA<A>>() {
+            @Override
+            public  EA<A> create(A pA) {
+                return new  EA<A>(pA);
+            }
+        });
     }
 
     private static BaseRecyclerViewHolder.ViewHolderFactory<A> sHolderFactory = new BaseRecyclerViewHolder.ViewHolderFactory<A>() {
@@ -42,5 +47,4 @@ public class MyAdapter extends ConvertAdapter<A> {
         }
 
 
-    }
-}
+}}

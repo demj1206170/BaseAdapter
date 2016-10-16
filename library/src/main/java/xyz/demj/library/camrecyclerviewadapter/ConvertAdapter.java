@@ -14,25 +14,27 @@ import java.util.List;
  * Created by demj on 2016/10/16.
  */
 
-public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelectionRecyclerViewAdapter<E> {
-    private final MultiSelectionRecyclerViewAdapter<To<E>> mToMultiSelectionRecyclerViewAdapter;
+public class ConvertAdapter<E, T extends ConvertAdapter.To<E>> extends MultiSelectionRecyclerViewAdapter<E> {
+    private final MultiSelectionRecyclerViewAdapter<T> mToMultiSelectionRecyclerViewAdapter;
 
     private final ArrayMap<E, To<E>> mElementMap = new ArrayMap<>();
 
 
-    private ArrayMap<E, To<E>> mEToArrayMap = new ArrayMap<>();
+    private ArrayMap<E, T> mEToArrayMap = new ArrayMap<>();
 
     @Override
     public int getItemViewType(int position) {
         return mToMultiSelectionRecyclerViewAdapter.getItemViewType(position);
     }
 
-    public ConvertAdapter(BaseRecyclerViewHolder.ViewHolderFactory<E> pFactory) {
-        super(pFactory);
+   final TFactory<E, T> mETTFactory;
 
-        mToMultiSelectionRecyclerViewAdapter = new MultiSelectionRecyclerViewAdapter<>(new BaseRecyclerViewHolder.ViewHolderFactory<To<E>>() {
+    public ConvertAdapter(BaseRecyclerViewHolder.ViewHolderFactory<E> pFactory, TFactory<E, T> pETTFactory) {
+        super(pFactory);
+        mETTFactory = pETTFactory;
+        mToMultiSelectionRecyclerViewAdapter = new MultiSelectionRecyclerViewAdapter<>(new BaseRecyclerViewHolder.ViewHolderFactory<T>() {
             @Override
-            public BaseRecyclerViewHolder<To<E>> createViewHolder(ViewGroup parent, int viewType) {
+            public BaseRecyclerViewHolder<T> createViewHolder(ViewGroup parent, int viewType) {
                 BaseRecyclerViewHolder<E> viewHolder = mViewHolderFactory.createViewHolder(parent, viewType);
                 viewHolder.mAdapter = ConvertAdapter.this;
                 return new ToViewHolder<>(viewHolder);
@@ -89,7 +91,7 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
         return mToMultiSelectionRecyclerViewAdapter.isItemSelected(findTo(element));
     }
 
-    private To<E> findTo(E key) {
+    private T findTo(E key) {
         if (key == null)
             return null;
         return mEToArrayMap.get(key);
@@ -120,15 +122,15 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
         mToMultiSelectionRecyclerViewAdapter.setSelectedItems(convertTo(pSelectedItems, false), notify);
     }
 
-    private Collection<To<E>> convertTo(Collection<? extends E> pECollection, boolean create) {
-        List<To<E>> list = new ArrayList<>(pECollection.size());
+    private Collection<T> convertTo(Collection<? extends E> pECollection, boolean create) {
+        List<T> list = new ArrayList<>(pECollection.size());
         if (create) {
             for (E e : pECollection) {
                 list.add(get((e)));
             }
         } else {
             for (E e : pECollection) {
-                To<E> to = findTo(e);
+                T to = findTo(e);
                 if (to != null)
                     list.add(to);
             }
@@ -163,7 +165,7 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
 
     @Override
     public List<E> getSelectedItems() {
-        List<To<E>> list = mToMultiSelectionRecyclerViewAdapter.getSelectedItems();
+        List<T> list = mToMultiSelectionRecyclerViewAdapter.getSelectedItems();
         return revert(list);
     }
 
@@ -172,7 +174,7 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
         return mToMultiSelectionRecyclerViewAdapter.getSelectedItemPositions(sorted);
     }
 
-    private List<E> revert(Collection<To<E>> pToCollection) {
+    private List<E> revert(Collection<T> pToCollection) {
         List<E> list = new ArrayList<>(pToCollection.size());
         for (To<? extends E> to : pToCollection) {
             E e = to.to();
@@ -228,7 +230,7 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
     public E set(E pNewOne, int position, boolean notify) {
         if (pNewOne == null)
             return null;
-        To<E> to = get(pNewOne);
+        T to = get(pNewOne);
         to = mToMultiSelectionRecyclerViewAdapter.set(to, position, notify);
         return to == null ? null : to.to();
     }
@@ -242,10 +244,10 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
     public E set(E pOldOne, E pNewOne, boolean notify) {
         if (pOldOne == null || pNewOne == null)
             return null;
-        To<E> old = findTo(pOldOne);
+        T old = findTo(pOldOne);
         if (old == null)
             return null;
-        To<E> newOne = get(pNewOne);
+        T newOne = get(pNewOne);
         old = mToMultiSelectionRecyclerViewAdapter.set(old, newOne, notify);
         return old == null ? null : old.to();
     }
@@ -264,10 +266,10 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
     public E set(E pNewOne, final Selector<? super E> pSelector, boolean notify) {
         if (pNewOne == null)
             return null;
-        To<E> to = get(pNewOne);
-        to = mToMultiSelectionRecyclerViewAdapter.set(to, new Selector<To<E>>() {
+        T to = get(pNewOne);
+        to = mToMultiSelectionRecyclerViewAdapter.set(to, new Selector<T>() {
             @Override
-            public boolean isSelected(To<E> element) {
+            public boolean isSelected(T element) {
                 return pSelector.isSelected(element.to());
             }
         }, notify);
@@ -278,10 +280,10 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
     public E setFirst(E pNewOne, final Selector<? super E> pSelector, boolean notify) {
         if (pNewOne == null)
             return null;
-        To<E> to = get(pNewOne);
-        to = mToMultiSelectionRecyclerViewAdapter.setFirst(to, new Selector<To<E>>() {
+        T to = get(pNewOne);
+        to = mToMultiSelectionRecyclerViewAdapter.setFirst(to, new Selector<T>() {
             @Override
-            public boolean isSelected(To<E> element) {
+            public boolean isSelected(T element) {
                 return pSelector.isSelected(element.to());
             }
         }, notify);
@@ -297,10 +299,10 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
     public E setLast(E pNewOne, final Selector<? super E> pSelector, boolean notify) {
         if (pNewOne == null)
             return null;
-        To<E> to = get(pNewOne);
-        to = mToMultiSelectionRecyclerViewAdapter.setLast(to, new Selector<To<E>>() {
+        T to = get(pNewOne);
+        to = mToMultiSelectionRecyclerViewAdapter.setLast(to, new Selector<T>() {
             @Override
-            public boolean isSelected(To<E> element) {
+            public boolean isSelected(T element) {
                 return pSelector.isSelected(element.to());
             }
         }, notify);
@@ -547,9 +549,9 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
 
     @Override
     public List<E> get(final Selector<E> pSelector) {
-        return to(mToMultiSelectionRecyclerViewAdapter.get(new Selector<To<E>>() {
+        return to(mToMultiSelectionRecyclerViewAdapter.get(new Selector<T>() {
             @Override
-            public boolean isSelected(To<E> element) {
+            public boolean isSelected(T element) {
                 return pSelector.isSelected(element.to());
             }
         }));
@@ -559,7 +561,7 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
         T to();
     }
 
-    public static class ToViewHolder<E> extends BaseRecyclerViewHolder<To<E>> {
+    public static class ToViewHolder<E, T> extends BaseRecyclerViewHolder<T> {
         private final BaseRecyclerViewHolder<E> mTarget;
 
         public ToViewHolder(BaseRecyclerViewHolder<E> target) {
@@ -567,22 +569,33 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
             mTarget = target;
         }
 
+
         @Override
-        public void bindViewHolder(To<E> element, BaseRecyclerViewAdapter<To<E>> pAdapter, int position) {
+        protected void bindViewHolder(T element, BaseRecyclerViewAdapter<T> pAdapter, int position) {
+
         }
     }
 
-    @Override
-    public void add(E element) {
-        mToMultiSelectionRecyclerViewAdapter.add(get(element));
+    public interface TFactory<E, T> {
+        T create(E pE);
     }
 
-    private static class ToImpl<T> implements To<T> {
+
+    @Override
+    public void add(E element) {
+        To<T> to = new ToImpl<>(mETTFactory.create(element));
+        T t = mETTFactory.create(element);
+        mToMultiSelectionRecyclerViewAdapter.add(t);
+    }
+
+
+    private static class ToImpl<E, T> implements To<T> {
         private T mT;
 
         public ToImpl(T t) {
             mT = t;
         }
+
 
         @Override
         public T to() {
@@ -590,50 +603,48 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
         }
     }
 
-    protected static <T> To<T> get(T t) {
-        if (t == null)
-            return null;
-        return new ToImpl<>(t);
+    private T get(E el) {
+        return el == null ? null : mETTFactory.create(el);
     }
 
-    private OnOperateCallback<To<E>> msOnOperateCallback = new OnOperateCallback<To<E>>() {
+    private OnOperateCallback<T> msOnOperateCallback = new OnOperateCallback<T>() {
         @Override
         public void doBeforeRemove(int pos) {
 
         }
 
         @Override
-        public void doBeforeSet(int position, To<E> newOne, boolean notify) {
+        public void doBeforeSet(int position, T newOne, boolean notify) {
 
         }
 
         @Override
-        public void doAfterSet(To<E> oldOne, To<E> newOne, boolean notify) {
+        public void doAfterSet(T oldOne, T newOne, boolean notify) {
             ConvertAdapter.super.set(to(oldOne), to(newOne), notify);
         }
 
         @Override
-        public void doAfterRemove(To<E> pETo, boolean notify) {
+        public void doAfterRemove(T pETo, boolean notify) {
             ConvertAdapter.super.remove(to(pETo), notify);
         }
 
         @Override
-        public void doAfterAdded(int pPosition, To<E> newOne, boolean notify) {
+        public void doAfterAdded(int pPosition, T newOne, boolean notify) {
             ConvertAdapter.super.add(to(newOne), pPosition, notify);
         }
 
         @Override
-        public void doBeforeAdd(int pos, To<E> pWill, boolean notify) {
+        public void doBeforeAdd(int pos, T pWill, boolean notify) {
 
         }
 
         @Override
-        public void doBeforeAddAll(int pPosition, List<To<E>> pList) {
+        public void doBeforeAddAll(int pPosition, List<T> pList) {
 
         }
 
         @Override
-        public void doAfterAddAll(int pPosition, List<To<E>> pList, boolean notify) {
+        public void doAfterAddAll(int pPosition, List<T> pList, boolean notify) {
             ConvertAdapter.super.addAll(revert(pList), pPosition, notify);
         }
 
@@ -647,7 +658,7 @@ public class ConvertAdapter<E,T extends ConvertAdapter.To<E>> extends MultiSelec
             ConvertAdapter.super.removeAll(pNotify);
         }
     };
-    private MultiSelectionOnOperateCallback<To<E>> mMultiSelectionOnOperateCallback = new MultiSelectionOnOperateCallback<To<E>>() {
+    private MultiSelectionOnOperateCallback<T> mMultiSelectionOnOperateCallback = new MultiSelectionOnOperateCallback<T>() {
         @Override
         public void doAfterSetItemSelection(int position, boolean isSelected, boolean pNotify) {
             ConvertAdapter.super.setItemSelection(position, isSelected, pNotify);
