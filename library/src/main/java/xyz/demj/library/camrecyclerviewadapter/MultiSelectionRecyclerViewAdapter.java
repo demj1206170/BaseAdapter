@@ -7,8 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 /**
  * Created by demj on 2016/10/15.
@@ -18,6 +16,7 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
     final ArrayMap<E, Boolean> mSelectedItems = new ArrayMap<>();
 
     private MultiSelectionOnOperateCallback<E> mMultiSelectionOnOperateCallback = new MultiSelectionOnOperateCallbackImpl<>();
+    private OnItemSelectionChangedListener mOnItemSelectionChangedListener;
 
     public MultiSelectionRecyclerViewAdapter(BaseRecyclerViewHolder.ViewHolderFactory<E> pFactory) {
         super(pFactory);
@@ -29,55 +28,8 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
         else mMultiSelectionOnOperateCallback = new MultiSelectionOnOperateCallbackImpl<>();
     }
 
-
-    public interface OnItemSelectionChangedListener {
-        void onItemSelectionChanged(int position, boolean isSelected);
-
-        void onItemSelectionChanged(Map<Integer, Boolean> pMap);
-    }
-
-    private OnItemSelectionChangedListener mOnItemSelectionChangedListener;
-
     public void setOnItemSelectionChangedListener(OnItemSelectionChangedListener pOnItemSelectionChangedListener) {
         mOnItemSelectionChangedListener = pOnItemSelectionChangedListener;
-    }
-
-    @Override
-    public void toggleSelection(int position) {
-        setItemSelection(position, !isItemSelected(position));
-    }
-
-    @Override
-    public void attachToContentActionMode(int triggerPosition) {
-        mSelectedItems.clear();
-        isInCAM = true;
-        if (validPos(triggerPosition)) {
-            setItemSelection(triggerPosition, true, true);
-        }
-    }
-
-    @Override
-    public void detachFromContentActionMode() {
-        isInCAM = false;
-        clearSelection(true);
-    }
-
-    public void setItemSelection(int position, boolean isSelected) {
-        setItemSelection(position, isSelected, true);
-    }
-
-    @Override
-    public boolean isItemSelected(int position) {
-        if (!validPos(position))
-            return false;
-        return isItemSelected(mElements.get(position));
-    }
-
-    public boolean isItemSelected(E element) {
-        if (element == null)
-            return false;
-        Boolean b = mSelectedItems.get(element);
-        return b != null ? b : false;
     }
 
     @Override
@@ -90,6 +42,131 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
         super.doAfterRemove(pE, notify);
         internalSetItemSelection(pE, false, isInCAM && notify);
 
+    }
+
+    @Override
+    public void removeAll(boolean notify) {
+        super.removeAll(notify);
+        mSelectedItems.clear();
+    }
+
+    @Override
+    protected void doBeforeSet(int position, E newOne, boolean notify) {
+        super.doBeforeSet(position, newOne, notify);
+    }
+
+    @Override
+    protected void doAfterSet(E oldOne, E newOne, boolean notify) {
+        super.doAfterSet(oldOne, newOne, notify);
+        boolean is = isItemSelected(oldOne);
+        if (is) {
+            internalSetItemSelection(oldOne, false, false);
+            internalSetItemSelection(newOne, true, notify);
+        }
+    }
+
+    @Override
+    public void toggleSelection(int position) {
+        // internalSetItemSelection(position, !isItemSelected(position));
+        internalSetItemSelection(position, !internalIsItemSelected(position), true);
+    }
+
+
+    @Override
+    public void attachToContentActionMode(int triggerPosition) {
+        mSelectedItems.clear();
+        isInCAM = true;
+        if (validPos(triggerPosition)) {
+            internalSetItemSelection(triggerPosition, true, true);
+        }
+    }
+
+    @Override
+    public void detachFromContentActionMode() {
+        isInCAM = false;
+        internalClearSelection(true);
+    }
+
+
+    private boolean validPos(int position) {
+        return position >= 0 && position < mElements.size();
+    }
+
+    @Override
+    public boolean isItemSelected(int position) {
+        if (!validPos(position))
+            return false;
+        return internalIsItemSelected(mElements.get(position));
+    }
+
+    public void clearSelection(boolean notify) {
+        internalClearSelection(notify);
+    }
+
+    private void internalClearSelection(boolean notify) {
+        List<Integer> mSelected = getSelectedItemPositions();
+        doBeforeClearItemSelection(notify);
+        mSelectedItems.clear();
+        doAfterClearItemSelection(notify);
+
+        Map<Integer, Boolean> map = new ArrayMap<>(mSelected.size());
+        if (notify) {
+            for (Integer integer : mSelected) {
+                map.put(integer, Boolean.FALSE);
+                notifyItemChanged(integer);
+            }
+            if (mOnItemSelectionChangedListener != null)
+                mOnItemSelectionChangedListener.onItemSelectionChanged(map);
+        }
+    }
+
+    public List<Integer> getSelectedItemPositions() {
+        return internalGetSelectedItemPositions(true);
+    }
+
+    private void doBeforeClearItemSelection(boolean notify) {
+        mMultiSelectionOnOperateCallback.doBeforeClearItemSelection(notify);
+    }
+
+    private void doAfterClearItemSelection(boolean notify) {
+        mMultiSelectionOnOperateCallback.doAfterClearItemSelection(notify);
+    }
+
+    private List<Integer> internalGetSelectedItemPositions(boolean sorted) {
+        List<Integer> selectedPositions = new ArrayList<>(mSelectedItems.size());
+        for (E e : mSelectedItems.keySet()) {
+            int index = mElements.indexOf(e);
+            if (validPos(index) && mSelectedItems.get(e)) {
+                selectedPositions.add(index);
+            } else mSelectedItems.remove(e);
+        }
+        if (sorted)
+            Collections.sort(selectedPositions);
+        return selectedPositions;
+    }
+
+    public void setItemSelection(int position, boolean isSelected) {
+        internalSetItemSelection(position, isSelected, true);
+    }
+
+    private boolean internalSetItemSelection(int position, boolean selected, boolean notify) {
+        if (!validPos(position))
+            return false;
+        return internalSetItemSelection(mElements.get(position), selected, notify);
+    }
+
+    private boolean internalIsItemSelected(E element) {
+        if (element == null)
+            return false;
+        Boolean b = mSelectedItems.get(element);
+        return b != null ? b : false;
+    }
+
+    private boolean internalIsItemSelected(int index) {
+        if (!validPos(index)) {
+            return false;
+        }
+        return internalIsItemSelected(mElements.get(index));
     }
 
     private boolean internalSetItemSelection(E e, boolean isSelected, boolean notify) {
@@ -117,16 +194,13 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
         mMultiSelectionOnOperateCallback.doAfterSetItemSelection(pPosition, pIsSelected, pNotify);
     }
 
-    @Override
-    public void removeAll(boolean notify) {
-        super.removeAll(notify);
-        mSelectedItems.clear();
+    public boolean isItemSelected(E element) {
+        return internalIsItemSelected(element);
     }
 
     public boolean setItemSelection(int position, boolean selected, boolean notify) {
-        if (!validPos(position))
-            return false;
-        return internalSetItemSelection(mElements.get(position), selected, notify);
+
+        return internalSetItemSelection(position, selected, notify);
     }
 
     private void notifyItemsSelectionChanged(Map<Integer, Boolean> pMap, boolean ifNull) {
@@ -143,18 +217,36 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
     }
 
     public void setSelectedItems(int[] pSelectedItemPositions, boolean notify) {
+        internalSetSelectedItems(pSelectedItemPositions, notify);
+    }
+
+    private void internalSetSelectedItems(int[] pSelectedItemPositions, boolean notify) {
         List<Integer> positions = new ArrayList<>(pSelectedItemPositions.length);
         for (int po : pSelectedItemPositions) {
             positions.add(po);
         }
-        setSelectedItemsByPosition(positions, notify);
+        internalSetSelectedItemsByPosition(positions, notify);
     }
 
-    public void setSelectedItems(int[] pSelectedItemPositions) {
-        setSelectedItems(pSelectedItemPositions, true);
+    public void setSelectedItemsByPosition(Collection<Integer> pPositions, boolean notify) {
+        internalSetSelectedItemsByPosition(pPositions, notify);
     }
 
-    public void setSelectedItems(Collection<? extends E> pSelectedItems, boolean notify) {
+    private void internalSetSelectedItemsByPosition(Collection<Integer> pPositions, boolean notify) {
+        List<E> pSelectedItem = new ArrayList<>(pPositions.size());
+        for (int position : pPositions) {
+            if (validPos(position)) {
+                pSelectedItem.add(mElements.get(position));
+            }
+        }
+        internalSetSelectedItems(pSelectedItem, notify);
+    }
+
+//    public List<Integer> getSelectedItemPositions(boolean sorted) {
+//        return internalGetSelectedItemPositions(sorted);
+//    }
+
+    private void internalSetSelectedItems(Collection<? extends E> pSelectedItems, boolean notify) {
         Map<Integer, Boolean> map = new ArrayMap<Integer, Boolean>(pSelectedItems.size());
         for (E e : pSelectedItems) {
             int index = mElements.indexOf(e);
@@ -172,64 +264,20 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
         }
     }
 
-    public void setSelectedItemsByPosition(Collection<Integer> pPositions, boolean notify) {
-        List<E> pSelectedItem = new ArrayList<>(pPositions.size());
-        for (int position : pPositions) {
-            if (validPos(position)) {
-                pSelectedItem.add(mElements.get(position));
-            }
-        }
-        setSelectedItems(pSelectedItem, notify);
+    public void setSelectedItems(Collection<? extends E> pSelectedItems, boolean notify) {
+        internalSetSelectedItems(pSelectedItems, notify);
     }
 
     public void setSelectedItemsByPosition(Collection<Integer> pPositions) {
-        setSelectedItemsByPosition(pPositions, true);
-    }
-
-    public void clearSelection(boolean notify) {
-        List<Integer> mSelected = getSelectedItemPositions();
-        doBeforeClearItemSelection(notify);
-        mSelectedItems.clear();
-        doAfterClearItemSelection(notify);
-
-        Map<Integer, Boolean> map = new ArrayMap<>(mSelected.size());
-        if (notify) {
-            for (Integer integer : mSelected) {
-                map.put(integer, Boolean.FALSE);
-                notifyItemChanged(integer);
-            }
-            if (mOnItemSelectionChangedListener != null)
-                mOnItemSelectionChangedListener.onItemSelectionChanged(map);
-        }
-    }
-
-    private void doAfterClearItemSelection(boolean notify) {
-        mMultiSelectionOnOperateCallback.doAfterClearItemSelection(notify);
-    }
-
-    private void doBeforeClearItemSelection(boolean notify) {
-        mMultiSelectionOnOperateCallback.doBeforeClearItemSelection(notify);
+        internalSetSelectedItemsByPosition(pPositions, true);
     }
 
     public void clearSelection() {
-        clearSelection(true);
+        internalClearSelection(true);
     }
 
     public List<Integer> getSelectedItemPositions(boolean sorted) {
-        List<Integer> selectedPositions = new ArrayList<>(mSelectedItems.size());
-        for (E e : mSelectedItems.keySet()) {
-            int index = mElements.indexOf(e);
-            if (validPos(index) && mSelectedItems.get(e)) {
-                selectedPositions.add(index);
-            } else mSelectedItems.remove(e);
-        }
-        if (sorted)
-            Collections.sort(selectedPositions);
-        return selectedPositions;
-    }
-
-    public List<Integer> getSelectedItemPositions() {
-        return getSelectedItemPositions(true);
+        return internalGetSelectedItemPositions(sorted);
     }
 
     public List<E> getSelectedItems() {
@@ -250,19 +298,14 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
         return selected;
     }
 
-    @Override
-    protected void doBeforeSet(int position, E newOne, boolean notify) {
-        super.doBeforeSet(position, newOne, notify);
+    public void setSelectedItems(int[] pSelectedItemPositions) {
+        internalSetSelectedItems(pSelectedItemPositions, true);
     }
 
-    @Override
-    protected void doAfterSet(E oldOne, E newOne, boolean notify) {
-        super.doAfterSet(oldOne, newOne, notify);
-        boolean is = isItemSelected(oldOne);
-        if (is) {
-            internalSetItemSelection(oldOne, false, false);
-            internalSetItemSelection(newOne, true, false);
-        }
+    public interface OnItemSelectionChangedListener {
+        void onItemSelectionChanged(int position, boolean isSelected);
+
+        void onItemSelectionChanged(Map<Integer, Boolean> pMap);
     }
 
     protected interface MultiSelectionOnOperateCallback<E> {

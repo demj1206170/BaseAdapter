@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by demj on 2016/10/16.
@@ -27,7 +28,7 @@ public class ConvertAdapter<E, T extends ConvertAdapter.To<E>> extends MultiSele
         return mToMultiSelectionRecyclerViewAdapter.getItemViewType(position);
     }
 
-   final TFactory<E, T> mETTFactory;
+    final TFactory<E, T> mETTFactory;
 
     public ConvertAdapter(BaseRecyclerViewHolder.ViewHolderFactory<E> pFactory, TFactory<E, T> pETTFactory) {
         super(pFactory);
@@ -221,9 +222,10 @@ public class ConvertAdapter<E, T extends ConvertAdapter.To<E>> extends MultiSele
         return mToMultiSelectionRecyclerViewAdapter.getItemCount();
     }
 
-    @Override
-    protected boolean validPos(int pos) {
-        return mToMultiSelectionRecyclerViewAdapter.validPos(pos);
+
+    private boolean validPos(int pos) {
+        return pos >= 0 && pos < mToMultiSelectionRecyclerViewAdapter.mElements.size();
+        // return mToMultiSelectionRecyclerViewAdapter.validPos(pos);
     }
 
     @Override
@@ -548,7 +550,7 @@ public class ConvertAdapter<E, T extends ConvertAdapter.To<E>> extends MultiSele
     }
 
     @Override
-    public List<E> get(final Selector<E> pSelector) {
+    public List<E> get(final Selector<? super E> pSelector) {
         return to(mToMultiSelectionRecyclerViewAdapter.get(new Selector<T>() {
             @Override
             public boolean isSelected(T element) {
@@ -620,16 +622,19 @@ public class ConvertAdapter<E, T extends ConvertAdapter.To<E>> extends MultiSele
 
         @Override
         public void doAfterSet(T oldOne, T newOne, boolean notify) {
+            mEToArrayMap.put(to(oldOne), newOne);
             ConvertAdapter.super.set(to(oldOne), to(newOne), notify);
         }
 
         @Override
         public void doAfterRemove(T pETo, boolean notify) {
+            mEToArrayMap.remove(to(pETo));
             ConvertAdapter.super.remove(to(pETo), notify);
         }
 
         @Override
         public void doAfterAdded(int pPosition, T newOne, boolean notify) {
+            mEToArrayMap.put(to(newOne), newOne);
             ConvertAdapter.super.add(to(newOne), pPosition, notify);
         }
 
@@ -645,16 +650,23 @@ public class ConvertAdapter<E, T extends ConvertAdapter.To<E>> extends MultiSele
 
         @Override
         public void doAfterAddAll(int pPosition, List<T> pList, boolean notify) {
+            Map<E, T> map = new ArrayMap<>(pList.size());
+            for (T t : pList) {
+                map.put(to(t), t);
+            }
+            mEToArrayMap.putAll(map);
             ConvertAdapter.super.addAll(revert(pList), pPosition, notify);
         }
 
         @Override
         public void doAfterRemoveAll(boolean notify) {
+            mEToArrayMap.clear();
             ConvertAdapter.super.removeAll(notify);
         }
 
         @Override
         public void doBeforeRemoveAll(boolean pNotify) {
+            mEToArrayMap.clear();
             ConvertAdapter.super.removeAll(pNotify);
         }
     };

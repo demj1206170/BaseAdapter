@@ -105,7 +105,7 @@ public interface IBaseAdapter<E> {
 
     E get(int position);
 
-    public abstract List<E> get(Selector<E> pSelector);
+    public abstract List<E> get(Selector<? super E> pSelector);
 
     E getFirst(Selector<? super E> pSelector);
 

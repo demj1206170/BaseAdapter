@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import xyz.demj.library.camrecyclerviewadapter.BaseRecyclerViewAdapter;
@@ -64,7 +65,10 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.del:
-                mMyAdapter.remove(mMyAdapter.get(0));
+//                List<  A> ls=new ArrayList<>(2);
+//                ls.add(mMyAdapter.get(0));
+//                ls.add(mMyAdapter.get(1));
+                mMyAdapter.set(new A.B(1234), 0);
                 break;
         }
         return super.onOptionsItemSelected(item);
