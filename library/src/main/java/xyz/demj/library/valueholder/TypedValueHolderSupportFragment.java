@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
  * Created by demj on 2016/10/23.
  */
 
+
 public abstract class TypedValueHolderSupportFragment<E> extends Fragment {
     protected E mTypedValue;
     private long mTypedValueKey = -1;
