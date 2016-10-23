@@ -1,5 +1,6 @@
 package xyz.demj.library.camrecyclerviewadapter;
 
+import android.content.pm.ProviderInfo;
 import android.support.v4.util.ArrayMap;
 
 import java.util.ArrayList;
@@ -15,12 +16,49 @@ import java.util.Map;
 public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapter<E> {
     final ArrayMap<E, Boolean> mSelectedItems = new ArrayMap<>();
 
+    private boolean mIsMultiSelection = true;
     private MultiSelectionOnOperateCallback<E> mMultiSelectionOnOperateCallback = new MultiSelectionOnOperateCallbackImpl<>();
     private OnItemSelectionChangedListener mOnItemSelectionChangedListener;
 
     public MultiSelectionRecyclerViewAdapter(BaseRecyclerViewHolder.ViewHolderFactory<E> pFactory) {
         super(pFactory);
     }
+
+    public final void setIsMultiSelection(boolean isMultiSelection) {
+        mIsMultiSelection = isMultiSelection;
+    }
+
+    public void revertSelection() {
+        internalExculddSelection(new ArrayList<E>(mSelectedItems.keySet()));
+    }
+
+    public void setAllItemSelection(boolean allSelected) {
+        if (allSelected)
+            internalSetSelectedItems(mElements, true);
+        else clearSelection();
+    }
+
+    public boolean isAllItemSelected() {
+        return mSelectedItems.size() == mElements.size();
+    }
+
+    private void internalExculddSelection(Collection<E> pExculeds) {
+        doBeforeClearItemSelection(false);
+        mSelectedItems.clear();
+        doAfterClearItemSelection(false);
+        List<E> eList = new ArrayList<>(mElements);
+        eList.removeAll(pExculeds == null ? Collections.<E>emptyList() : pExculeds);
+        for (E e : eList) {
+            internalSetItemSelection(mElements.indexOf(e), true, false);
+        }
+        notifyDataSetChanged();
+
+    }
+
+    public final boolean isMultiSelection() {
+        return mIsMultiSelection;
+    }
+
 
     public void setMultiSelectionOnOperateCallback(MultiSelectionOnOperateCallback<E> pMultiSelectionOnOperateCallback) {
         if (pMultiSelectionOnOperateCallback != null)
@@ -169,10 +207,18 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
         return internalIsItemSelected(mElements.get(index));
     }
 
+    public int getSelectedItemCount() {
+        return mSelectedItems.size();
+    }
+
     private boolean internalSetItemSelection(E e, boolean isSelected, boolean notify) {
         int position = mElements.indexOf(e);
         if (isSelected && position == -1)
             return false;
+
+        if (isSelected && !mIsMultiSelection) {
+            clearSelection(notify);
+        }
         doBeforeSetItemSelection(position, isSelected);
         if (isSelected)
             mSelectedItems.put(e, true);
@@ -246,6 +292,7 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
 //        return internalGetSelectedItemPositions(sorted);
 //    }
 
+
     private void internalSetSelectedItems(Collection<? extends E> pSelectedItems, boolean notify) {
         Map<Integer, Boolean> map = new ArrayMap<Integer, Boolean>(pSelectedItems.size());
         for (E e : pSelectedItems) {
@@ -263,6 +310,7 @@ public class MultiSelectionRecyclerViewAdapter<E> extends BaseRecyclerViewAdapte
             mOnItemSelectionChangedListener.onItemSelectionChanged(map);
         }
     }
+
 
     public void setSelectedItems(Collection<? extends E> pSelectedItems, boolean notify) {
         internalSetSelectedItems(pSelectedItems, notify);

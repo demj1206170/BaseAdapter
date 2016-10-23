@@ -58,7 +58,12 @@ public abstract class BaseRecyclerViewAdapter<E> extends RecyclerView.Adapter<Ba
     public final BaseRecyclerViewHolder<E> onCreateViewHolder(ViewGroup parent, int viewType) {
         BaseRecyclerViewHolder<E> viewHolder = mViewHolderFactory.createViewHolder(parent, viewType);
         viewHolder.mAdapter = this;
+        doAfterCreateViewHolder(viewHolder);
         return viewHolder;
+    }
+
+    protected void doAfterCreateViewHolder(BaseRecyclerViewHolder<E> pCraetedViewHolder) {
+
     }
 
     @Override
@@ -83,7 +88,7 @@ public abstract class BaseRecyclerViewAdapter<E> extends RecyclerView.Adapter<Ba
 
     @Override
     public void add(E element, E beforeWhich) {
-        internalAdd(element, beforeWhich, true,true);
+        internalAdd(element, beforeWhich, true, true);
     }
 
     @Override
@@ -98,7 +103,7 @@ public abstract class BaseRecyclerViewAdapter<E> extends RecyclerView.Adapter<Ba
 
     @Override
     public void add(E element, E beforeWhichOne, boolean notify) {
-        internalAdd(element, beforeWhichOne, notify,true);
+        internalAdd(element, beforeWhichOne, notify, true);
     }
 
     @Override
@@ -216,7 +221,7 @@ public abstract class BaseRecyclerViewAdapter<E> extends RecyclerView.Adapter<Ba
         return removed;
     }
 
-    private  boolean validPos(int pos) {
+    private boolean validPos(int pos) {
         return pos >= 0 && pos < mElements.size();
     }
 
@@ -611,15 +616,18 @@ public abstract class BaseRecyclerViewAdapter<E> extends RecyclerView.Adapter<Ba
         return false;
     }
 
-    public  void toggleSelection(int position){}
+    public void toggleSelection(int position) {
+    }
 
     public boolean isInContentActionMode() {
         return isInCAM;
     }
 
-    public  void attachToContentActionMode(int triggerPosition){}
+    public void attachToContentActionMode(int triggerPosition) {
+    }
 
-    public  void detachFromContentActionMode(){}
+    public void detachFromContentActionMode() {
+    }
 
     public boolean isItemSelected(int position) {
         return false;

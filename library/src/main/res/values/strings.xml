@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">library</string>
+    <string name="cannot_scan_folder_by_permission_denied">权限被拒绝，无法扫描文件夹</string>
+    <string name="done">完成</string>
+    <string name="cancel">取消</string>
+    <string name="revert_selection">反选</string>
+    <string name="toggle_all_selection">全选/不选</string>
 </resources>

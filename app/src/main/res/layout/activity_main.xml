@@ -11,6 +11,11 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="xyz.demj.baseadapter.MainActivity">
 
+    <Button
+        android:text="dfsfdfa"
+        android:onClick="hh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
     <android.support.v7.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"

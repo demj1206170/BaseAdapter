@@ -8,7 +8,7 @@ import android.view.ViewGroup;
  * Created by demj on 2016/10/15.
  */
 
-public  abstract class BaseRecyclerViewHolder<E> extends RecyclerView.ViewHolder {
+public abstract class BaseRecyclerViewHolder<E> extends RecyclerView.ViewHolder {
     BaseRecyclerViewAdapter<E> mAdapter;
     private EventListener mEventListener = sEventListener;
     private boolean isClickable = true;
@@ -48,6 +48,7 @@ public  abstract class BaseRecyclerViewHolder<E> extends RecyclerView.ViewHolder
     public interface ViewHolderFactory<E> {
         BaseRecyclerViewHolder<E> createViewHolder(ViewGroup parent, int viewType);
     }
+
 
     private View.OnClickListener mOnClickListener = new View.OnClickListener() {
         @Override
