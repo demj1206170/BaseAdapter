@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
 /**
  * Created by demj on 2016/10/23.
@@ -15,7 +16,10 @@ public abstract class TypedValueHolderSupportActivity<E> extends AppCompatActivi
     protected E mTypedValue;
 
     private long mTypedValueKey = -1;
+
+
     protected static final String TYPED_VALUE_KEY = TypedValueHolderSupportActivity.class.getCanonicalName() + "typed_value_key";
+    protected static final String TYPED_SAVE_VALUE_KEY = TypedValueHolderSupportActivity.class.getCanonicalName() + "typed_save_value_key";
 
 
     @Override
@@ -43,18 +47,23 @@ public abstract class TypedValueHolderSupportActivity<E> extends AppCompatActivi
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+        Log.e(getClass().getSimpleName(), "onrestore");
         restoreValue(savedInstanceState);
+
     }
 
     @Override
     public void onRestoreInstanceState(Bundle savedInstanceState, PersistableBundle persistentState) {
         super.onRestoreInstanceState(savedInstanceState, persistentState);
+     //   Log.e(getClass().getSimpleName(), "onrestore");
         restoreValue(savedInstanceState);
+
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+      //  Log.e(getClass().getSimpleName(), "onsaveinstance");
         saveValue(outState);
     }
 
@@ -62,11 +71,12 @@ public abstract class TypedValueHolderSupportActivity<E> extends AppCompatActivi
     @Override
     public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
         super.onSaveInstanceState(outState, outPersistentState);
+       // Log.e(getClass().getSimpleName(), "onsaveinstance");
         saveValue(outState);
     }
 
     private void saveValue(Bundle outState) {
-        mTypedValueKey = TypedValueHolder.putValue(mTypedValue);
+        mTypedValueKey = TypedValueHolder.save(mTypedValue,TYPED_SAVE_VALUE_KEY,getType(),outState);
         outState.putLong(TYPED_VALUE_KEY, mTypedValueKey);
     }
     @Override
@@ -80,11 +90,16 @@ public abstract class TypedValueHolderSupportActivity<E> extends AppCompatActivi
     private void restoreValue(Bundle savedInstanceState) {
         if (savedInstanceState != null) {
             mTypedValueKey = savedInstanceState.getLong(TYPED_VALUE_KEY, -1);
-            E e = TypedValueHolder.getAndRemoveValue(mTypedValueKey, getValueClass());
+            E e = TypedValueHolder.getAndRemoveValue(mTypedValueKey, getValueClass(),TYPED_SAVE_VALUE_KEY,getType(),savedInstanceState);
             if (e != null)
                 mTypedValue = e;
         }
     }
+    /**
+     * get value type,which will used to determine call what fucntion when save or get value.
+     * @see TypedValueHolder
+     * */
+    protected  abstract int getType();
 
     protected abstract Class<E> getValueClass();
 
