@@ -1,12 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="48dp"
-              android:background="@drawable/bb"
-              android:orientation="vertical">
+<layout>
 
-    <TextView
-        android:id="@+id/text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-</LinearLayout>
+    <data>
+
+        <import type="xyz.demj.libs.camrecyclerviewadapter.BaseRecyclerViewAdapter"/>
+
+        <import type="xyz.demj.baseadapter.A"/>
+
+        <variable
+            name="adapter"
+            type="BaseRecyclerViewAdapter&lt;A&gt;"/>
+        <variable
+            name="data"
+            type="xyz.demj.baseadapter.A"/>
+    </data>
+
+    <LinearLayout
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:layout_width="match_parent"
+                  android:layout_height="48dp"
+                  android:selected="@{adapter.isItemSelected(data)}"
+                  android:background="@drawable/bb"
+                  android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{data.toString() }"/>
+    </LinearLayout>
+</layout>

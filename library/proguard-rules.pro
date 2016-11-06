@@ -15,3 +15,10 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+-keep class xyz.demj.library.** { public *;}
+-keepattributes Signature
+
+-keepclassmembers class xyz.demj.library.** {
+   public  void add(**);
+}

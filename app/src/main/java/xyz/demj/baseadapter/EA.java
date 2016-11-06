@@ -1,8 +1,9 @@
 package xyz.demj.baseadapter;
 
-import xyz.demj.library.camrecyclerviewadapter.ConvertAdapter;
+import xyz.demj.libs.camrecyclerviewadapter.ConvertAdapter;
 
 public  class EA<E> implements ConvertAdapter.To<E> {
+
 
             E mE;
 

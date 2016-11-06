@@ -7,8 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import xyz.demj.library.valueholder.TypedValueHolderActivity;
-import xyz.demj.library.valueholder.TypedValueHolderFragment;
+import xyz.demj.libs.valueholder.TypedValueHolder;
+import xyz.demj.libs.valueholder.TypedValueHolderActivity;
+import xyz.demj.libs.valueholder.TypedValueHolderFragment;
+
+import static xyz.demj.libs.valueholder.TypedValueHolder.TYPED_OTHER;
 
 /**
  * Created by demj on 2016/10/23.
@@ -33,7 +36,17 @@ public class TypeValueTest extends TypedValueHolderActivity<A> {
                 .commit();
     }
 
+    @Override
+    protected int getType() {
+        return TYPED_OTHER;
+    }
+
     public static class MyValuHoldrFrament extends TypedValueHolderFragment<A> {
+        @Override
+        protected int getType() {
+            return TYPED_OTHER;
+        }
+
         @Override
         protected Class<A> getValueClass() {
             return A.class;

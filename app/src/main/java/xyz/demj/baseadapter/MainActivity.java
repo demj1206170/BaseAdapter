@@ -1,33 +1,29 @@
 package xyz.demj.baseadapter;
 
 import android.app.Dialog;
+import android.databinding.DataBindingUtil;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
-import xyz.demj.library.camrecyclerviewadapter.BaseRecyclerViewAdapter;
-import xyz.demj.library.camrecyclerviewadapter.BaseRecyclerViewHolder;
-import xyz.demj.library.camrecyclerviewadapter.ConvertAdapter;
-import xyz.demj.library.camrecyclerviewadapter.Selector;
-import xyz.demj.library.filechooser.CoreFileChooser;
-import xyz.demj.library.filechooser.FileChooserHelper;
-import xyz.demj.library.filechooser.OnFileSelectedListener;
-import xyz.demj.library.valueholder.TypedValueHolderActivity;
-import xyz.demj.library.valueholder.TypedValueHolderSupportDialogFragment;
+import xyz.demj.baseadapter.databinding.ActivityMainBinding;
+import xyz.demj.libs.camrecyclerviewadapter.BaseRecyclerViewAdapter;
+import xyz.demj.libs.camrecyclerviewadapter.BaseRecyclerViewHolder;
+import xyz.demj.libs.camrecyclerviewadapter.ConvertAdapter;
+import xyz.demj.libs.filechooser.OnFileSelectedListener;
+import xyz.demj.libs.valueholder.TypedValueHolderSupportDialogFragment;
 
 public class MainActivity extends AppCompatActivity implements OnFileSelectedListener {
 
@@ -44,7 +40,16 @@ public class MainActivity extends AppCompatActivity implements OnFileSelectedLis
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        //  setContentView(R.layout.activity_main);
+        ActivityMainBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        binding.list.setLayoutManager(new LinearLayoutManager(this));
+        mMyAdapter = new MyAdapter();
+        binding.list.setAdapter(mMyAdapter);
+
+        for(int i=0;i<100;i++)
+        {
+            mMyAdapter.add(new A(i));
+        }
         //  FileChooserHelper.registerFileSelectedListener(this);
 //        mRecyclerView = (RecyclerView) findViewById(R.id.list);
 //        mMyAdapter = new MyAdapter();
@@ -54,19 +59,19 @@ public class MainActivity extends AppCompatActivity implements OnFileSelectedLis
 //            mCDConvertAdapter.add(new C());
 //        }
 //
-//        mMyAdapter.setOnItemClickListener(new BaseRecyclerViewAdapter.OnItemClickListener() {
-//            @Override
-//            public void onClick(View view, int position) {
-//                Log.e("dd", "click " + position);
-//            }
-//        });
-//        mMyAdapter.setOnItemLongClickListener(new BaseRecyclerViewAdapter.OnItemLongClickListener() {
-//            @Override
-//            public boolean onLongClick(View pView, int position) {
-//                mMyAdapter.attachToContentActionMode(position);
-//                return true;
-//            }
-//        });
+        mMyAdapter.setOnItemClickListener(new BaseRecyclerViewAdapter.OnItemClickListener() {
+            @Override
+            public void onClick(View view, int position) {
+                Log.e("dd", "click " + position);
+            }
+        });
+        mMyAdapter.setOnItemLongClickListener(new BaseRecyclerViewAdapter.OnItemLongClickListener() {
+            @Override
+            public boolean onLongClick(View pView, int position) {
+                mMyAdapter.attachToContentActionMode(position);
+                return true;
+            }
+        });
         //  FileChooserHelper.chooseFileInActivity(this, CoreFileChooser.MODE_SHOW_ALL, true);
 
 
@@ -91,7 +96,8 @@ public class MainActivity extends AppCompatActivity implements OnFileSelectedLis
 //                List<  A> ls=new ArrayList<>(2);
 //                ls.add(mMyAdapter.get(0));
 //                ls.add(mMyAdapter.get(1));
-                mMyAdapter.set(new A.B(1234), 0);
+                mMyAdapter.set(new A.B(1234), 0,false);
+
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -112,9 +118,9 @@ public class MainActivity extends AppCompatActivity implements OnFileSelectedLis
     public void hh(View view) {
         //  startActivity(TypedValueHolderActivity.getInent(this, TypeValueTest.class, new A.B(i++)));
 
-        MD md=new MD();
-        MD.putValue(md,new A(100));
-        md.show(getSupportFragmentManager(),"");
+        MD md = new MD();
+        MD.putValue(md, new A(100));
+        md.show(getSupportFragmentManager(), "");
     }
 
     public class C {
@@ -136,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements OnFileSelectedLis
 
     public BaseRecyclerViewHolder.ViewHolderFactory<C> mViewHolderFactory = new BaseRecyclerViewHolder.ViewHolderFactory<C>() {
         @Override
-        public BaseRecyclerViewHolder<C> createViewHolder(ViewGroup parent, int viewType) {
+        public BaseRecyclerViewHolder<C> createViewHolder(BaseRecyclerViewAdapter<C> pAdapter, ViewGroup parent, int viewType) {
             return new V(new TextView(MainActivity.this));
         }
 
@@ -164,6 +170,11 @@ public class MainActivity extends AppCompatActivity implements OnFileSelectedLis
     });
 
     public static class MD extends TypedValueHolderSupportDialogFragment<A> {
+        @Override
+        protected int getType() {
+            return 0;
+        }
+
         @Override
         protected Class<A> getValueClass() {
             return A.class;
